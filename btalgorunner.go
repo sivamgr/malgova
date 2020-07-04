@@ -1,7 +1,6 @@
 package malgova
 
 import (
-	"fmt"
 	"reflect"
 	"time"
 
@@ -42,7 +41,7 @@ func (a *btAlgoRunner) run() {
 
 		a.strategy.OnClose(&a.book)
 		a.handleBook()
-		fmt.Printf("P/L %9.2f | Trades %3d | %s\n", a.book.Cash-a.book.CashAllocated, a.book.OrderCount, a.ID())
+		//fmt.Printf("P/L %9.2f | Trades %3d | %s\n", a.book.Cash-a.book.CashAllocated, a.book.OrderCount, a.ID())
 	}
 }
 

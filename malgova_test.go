@@ -1,6 +1,7 @@
 package malgova
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -59,4 +60,7 @@ func TestAStrategy(t *testing.T) {
 	bt := BacktestEngine{}
 	bt.RegisterAlgo(Momento{})
 	bt.Run(&db, nil)
+	for _, trade := range bt.trades {
+		fmt.Printf("%s\n", trade)
+	}
 }

@@ -33,7 +33,7 @@ func (bt *BacktestEngine) Run(feed *kstreamdb.DB, oms OrderManager) {
 		dayRunner := btDayRunner{}
 		dayRunner.run(bt.algos, data)
 		// merge the trade ledger
-		if len(bt.trades) > 0 {
+		if len(dayRunner.trades) > 0 {
 			bt.trades = append(bt.trades, dayRunner.trades...)
 		}
 		log.Printf("%s - completed run\n", dt.Format("20060102"))
