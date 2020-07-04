@@ -19,7 +19,7 @@ type btAlgoRunner struct {
 	lastTick            kstreamdb.TickData
 	queueTick           []kstreamdb.TickData
 	utcLastPeriodicCall int64
-	trades              []tradeEntry
+	orders              []orderEntry
 }
 
 func (a *btAlgoRunner) ID() string {
@@ -62,7 +62,7 @@ func (a *btAlgoRunner) handleBook() {
 				a.book.Cash -= float64(cost)
 				a.book.Position += a.book.PendingOrderQuantity
 				// add trade trade ledger
-				a.trades = append(a.trades, tradeEntry{
+				a.orders = append(a.orders, orderEntry{
 					algoName: a.algoName,
 					at:       a.lastTick.Timestamp,
 					symbol:   a.symbol,
@@ -78,7 +78,7 @@ func (a *btAlgoRunner) handleBook() {
 				a.book.Cash -= float64(cost)
 				a.book.Position += a.book.PendingOrderQuantity
 				// add trade trade ledger
-				a.trades = append(a.trades, tradeEntry{
+				a.orders = append(a.orders, orderEntry{
 					algoName: a.algoName,
 					at:       a.lastTick.Timestamp,
 					symbol:   a.symbol,
@@ -96,7 +96,7 @@ func (a *btAlgoRunner) handleBook() {
 					a.book.Cash -= float64(cost)
 					a.book.Position += a.book.PendingOrderQuantity
 					// add trade trade ledger
-					a.trades = append(a.trades, tradeEntry{
+					a.orders = append(a.orders, orderEntry{
 						algoName: a.algoName,
 						at:       a.lastTick.Timestamp,
 						symbol:   a.symbol,
@@ -112,7 +112,7 @@ func (a *btAlgoRunner) handleBook() {
 					a.book.Cash -= float64(cost)
 					a.book.Position += a.book.PendingOrderQuantity
 					// add trade trade ledger
-					a.trades = append(a.trades, tradeEntry{
+					a.orders = append(a.orders, orderEntry{
 						algoName: a.algoName,
 						at:       a.lastTick.Timestamp,
 						symbol:   a.symbol,
@@ -150,7 +150,7 @@ func newAlgoInstance(algoType reflect.Type, symbol string) *btAlgoRunner {
 		// prealloc queue
 		a.queueTick = make([]kstreamdb.TickData, 0, len(a.watch)*24000)
 	}
-	a.trades = make([]tradeEntry, 0)
+	a.orders = make([]orderEntry, 0)
 	//fmt.Printf("%+v %+v %+v \n", a.ptr, reflect.TypeOf(a.ptr), a.ptr.Interface().(AlgoStrategy))
 	return a
 }

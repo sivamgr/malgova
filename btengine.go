@@ -10,7 +10,8 @@ import (
 // BacktestEngine struct
 type BacktestEngine struct {
 	algos  []reflect.Type
-	trades []tradeEntry
+	orders []orderEntry
+	scores []algoScore
 }
 
 // RegisterAlgo BacktestEngine
@@ -25,7 +26,7 @@ func (bt *BacktestEngine) RegisterAlgo(a interface{}) {
 func (bt *BacktestEngine) Run(feed *kstreamdb.DB, oms OrderManager) {
 	// Load All Data into memory
 	dates, _ := feed.GetDates()
-	bt.trades = make([]tradeEntry, 0)
+	bt.orders = make([]orderEntry, 0)
 	for _, dt := range dates {
 		log.Printf("%s - Loading data into memory\n", dt.Format("20060102"))
 		data, _ := feed.LoadDataForDate(dt)
@@ -33,10 +34,12 @@ func (bt *BacktestEngine) Run(feed *kstreamdb.DB, oms OrderManager) {
 		dayRunner := btDayRunner{}
 		dayRunner.run(bt.algos, data)
 		// merge the trade ledger
-		if len(dayRunner.trades) > 0 {
-			bt.trades = append(bt.trades, dayRunner.trades...)
+		if len(dayRunner.orders) > 0 {
+			bt.orders = append(bt.orders, dayRunner.orders...)
 		}
 		log.Printf("%s - completed run\n", dt.Format("20060102"))
 	}
 
+	// generate scores for algo runs
+	bt.scores = calculateAlgoScores(bt.orders)
 }

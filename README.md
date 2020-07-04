@@ -1,9 +1,14 @@
 # malgova
-Algo backtest library written in go for NSE traded scrips
-This is work-in-progress
+*warning :* "**work-in-progress**"
+
+Algo backtest go-module, to help with writing day trading strategies for NSE Level 1 / Level 2 datasets
+
+For recording market-data, refer to kbridge tool available at, https://github.com/sivamgr/kbridge
+
+
 
 # test
-```
+```console
 C:\source\repo>git clone https://github.com/sivamgr/malgova.git
 C:\source\repo>cd malgova
 C:\source\repo\kbridge>go get -u
@@ -11,17 +16,35 @@ C:\source\repo\kbridge>go test
 ```
 
 # go get
-```
+```console
 C:\source\repo\kbridge>go get github.com/sivamgr/malgova
 ```
 
-# sample strategy
+# AlgoStrategy Interface
 
+Algo strategies written in go should fully implement the malgova.AlgoStrategy interface as defined below
+
+```go
+// AlgoStrategy Interface
+type AlgoStrategy interface {
+	Setup(symbol string, b *Book) []string
+	OnTick(t kstreamdb.TickData, b *Book)
+	OnPeriodic(t time.Time, b *Book) // Invokes every sec
+	OnClose(b *Book)
+}
 ```
+# Order Book
+
+the Order-Book is passed to algo-strategies callback. Orders can be placed or position shall be exit through the methods exposed by the book
+
+
+# Example
+
+```go
 package main
 
 import (
-	"testing"
+	"fmt"
 	"time"
 
 	"github.com/markcheno/go-talib"

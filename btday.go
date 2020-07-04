@@ -12,7 +12,7 @@ type btDayRunner struct {
 	algos       []reflect.Type
 	tickManager map[string]*btTickManager
 	algoRunner  map[string]*btAlgoRunner
-	trades      []tradeEntry
+	orders      []orderEntry
 }
 
 func (bt *btDayRunner) instantiateAllAlgosForSymbol(symbol string) {
@@ -36,8 +36,8 @@ func algoRunWorker(wg *sync.WaitGroup, algo *btAlgoRunner, bt *btDayRunner) {
 	defer wg.Done()
 	algo.run()
 	// merge the trade ledger
-	if len(algo.trades) > 0 {
-		bt.trades = append(bt.trades, algo.trades...)
+	if len(algo.orders) > 0 {
+		bt.orders = append(bt.orders, algo.orders...)
 	}
 }
 
@@ -48,7 +48,7 @@ func (bt *btDayRunner) run(algos []reflect.Type, ticks []kstreamdb.TickData) {
 	bt.tickManager = make(map[string]*btTickManager)
 	bt.algoRunner = make(map[string]*btAlgoRunner)
 	flagSymbolAlgoSetup := make(map[string]bool)
-	bt.trades = make([]tradeEntry, 0)
+	bt.orders = make([]orderEntry, 0)
 	for _, t := range ticks {
 		// instantiate algo runners if not instantiated already
 		if t.IsTradable {

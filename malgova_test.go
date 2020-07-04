@@ -56,11 +56,11 @@ func (a *Momento) Setup(symbol string, b *Book) []string {
 }
 
 func TestAStrategy(t *testing.T) {
-	db := kstreamdb.SetupDatabase("/home/pi/data-kbridge/data/")
+	db := kstreamdb.SetupDatabase("/home/pi/test-data/")
 	bt := BacktestEngine{}
 	bt.RegisterAlgo(Momento{})
 	bt.Run(&db, nil)
-	for _, trade := range bt.trades {
-		fmt.Printf("%s\n", trade)
+	for _, s := range bt.scores {
+		fmt.Printf("%s\n", s)
 	}
 }
