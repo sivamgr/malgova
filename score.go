@@ -12,11 +12,11 @@ type tradeData struct {
 	algoName string
 	symbol   string
 	orders   []orderEntry
-	score    algoScore
+	score    AlgoScore
 	trades   []tradeEntry
 }
 
-type algoScore struct {
+type AlgoScore struct {
 	algoName string
 	symbol   string
 	// stats and scores
@@ -33,7 +33,7 @@ type algoScore struct {
 	sqn float64
 }
 
-func (t algoScore) String() string {
+func (t AlgoScore) String() string {
 	return fmt.Sprintf("%12s|%20s|%5d|%4d|%4d:%4d|%3d:%3d| %9.2f |%9.2f|%9.2f| %7.3f", t.algoName, t.symbol, t.ordersCount, t.tradesCount, t.tradesWon, t.tradesLost, t.winStreak, t.lossStreak, t.netPnl, t.netPnlPercentAverage, t.netPnlPercentStdDev, t.sqn)
 }
 
@@ -56,7 +56,7 @@ func (a *tradeData) add(t orderEntry) {
 // reset score
 func (a *tradeData) resetScore() {
 	a.trades = make([]tradeEntry, 0)
-	a.score = algoScore{
+	a.score = AlgoScore{
 		algoName: a.algoName,
 		symbol:   a.symbol,
 	}
@@ -140,8 +140,8 @@ func (a *tradeData) processScore() {
 	}
 }
 
-func calculateAlgoScores(orders []orderEntry) []algoScore {
-	scores := make([]algoScore, 0)
+func calculateAlgoScores(orders []orderEntry) []AlgoScore {
+	scores := make([]AlgoScore, 0)
 	mapAlgoData := make(map[string]*algoTradeData)
 	for _, t := range orders {
 		if _, ok := mapAlgoData[t.algoName]; !ok {

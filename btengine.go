@@ -11,7 +11,7 @@ import (
 type BacktestEngine struct {
 	algos  []reflect.Type
 	orders []orderEntry
-	scores []algoScore
+	scores []AlgoScore
 }
 
 // RegisterAlgo BacktestEngine
@@ -42,4 +42,9 @@ func (bt *BacktestEngine) Run(feed *kstreamdb.DB, oms OrderManager) {
 
 	// generate scores for algo runs
 	bt.scores = calculateAlgoScores(bt.orders)
+}
+
+// Scores returns the scores calculated
+func (bt *BacktestEngine) Scores() []AlgoScore {
+	return bt.scores
 }
