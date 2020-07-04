@@ -50,33 +50,26 @@ import (
 	"github.com/sivamgr/malgova"
 )
 
-// emaCrossStrategy AlgoStrategy
-type emaCrossStrategy struct {
+// Momento AlgoStrategy
+type Momento struct {
 	symbol string
 	cs1m   *malgova.CandlesData
 }
 
-// Setup method, should return list of symbols it need to subscribe for tickdata
-func (a *emaCrossStrategy) Setup(symbol string, b *malgova.Book) []string {
-	symbolsToSubscribe := make([]string, 0)
-	a.symbol = symbol
-	a.cs1m = malgova.NewCandlesData(60)
-    
-    // add one or more symbols as needed by strategy
-	symbolsToSubscribe = append(symbolsToSubscribe, symbol)
-	b.AllocateCash(10000)
-	return symbolsToSubscribe
-}
-
 // OnTick Method
-func (a *emaCrossStrategy) OnTick(t kstreamdb.TickData, b *malgova.Book) {
+func (a *Momento) OnTick(t kstreamdb.TickData, b *malgova.Book) {
 	if t.TradingSymbol == a.symbol {
 		a.cs1m.Update(t)
 	}
 }
 
+// OnClose method
+func (a *Momento) OnClose(b *malgova.Book) {
+	b.Exit()
+}
+
 // OnPeriodic method
-func (a *emaCrossStrategy) OnPeriodic(t time.Time, b *malgova.Book) {
+func (a *Momento) OnPeriodic(t time.Time, b *malgova.Book) {
 	if a.cs1m.HasChanged(t) && len(a.cs1m.Close) > 15 {
 		ltp := a.cs1m.LTP
 		ma1 := talib.Sma(a.cs1m.High, 15)
@@ -93,17 +86,24 @@ func (a *emaCrossStrategy) OnPeriodic(t time.Time, b *malgova.Book) {
 	}
 }
 
-// OnClose method
-func (a *emaCrossStrategy) OnClose(b *malgova.Book) {
-	b.Exit()
+// Setup method, should return list of symbols it need to subscribe for tickdata
+func (a *Momento) Setup(symbol string, b *malgova.Book) []string {
+	symbolsToSubscribe := make([]string, 0)
+	a.symbol = symbol
+	a.cs1m = malgova.NewCandlesData(60)
+	symbolsToSubscribe = append(symbolsToSubscribe, symbol)
+	b.AllocateCash(10000)
+	return symbolsToSubscribe
 }
 
-
 func main() {
-	db := kstreamdb.SetupDatabase("/home/pi/data-kbridge/data/")
+	db := kstreamdb.SetupDatabase("/home/pi/test-data/")
 	bt := malgova.BacktestEngine{}
-	bt.RegisterAlgo(emaCrossStrategy{})
+	bt.RegisterAlgo(Momento{})
 	bt.Run(&db, nil)
+	for _, s := range bt.Scores() {
+		fmt.Printf("%s\n", s)
+	}
 }
 
 ```

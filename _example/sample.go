@@ -1,34 +1,34 @@
-package malgova
+package main
 
 import (
 	"fmt"
-	"testing"
 	"time"
 
 	"github.com/markcheno/go-talib"
 	"github.com/sivamgr/kstreamdb"
+	"github.com/sivamgr/malgova"
 )
 
 // Momento AlgoStrategy
 type Momento struct {
 	symbol string
-	cs1m   *CandlesData
+	cs1m   *malgova.CandlesData
 }
 
 // OnTick Method
-func (a *Momento) OnTick(t kstreamdb.TickData, b *Book) {
+func (a *Momento) OnTick(t kstreamdb.TickData, b *malgova.Book) {
 	if t.TradingSymbol == a.symbol {
 		a.cs1m.Update(t)
 	}
 }
 
 // OnClose method
-func (a *Momento) OnClose(b *Book) {
+func (a *Momento) OnClose(b *malgova.Book) {
 	b.Exit()
 }
 
 // OnPeriodic method
-func (a *Momento) OnPeriodic(t time.Time, b *Book) {
+func (a *Momento) OnPeriodic(t time.Time, b *malgova.Book) {
 	if a.cs1m.HasChanged(t) && len(a.cs1m.Close) > 15 {
 		ltp := a.cs1m.LTP
 		ma1 := talib.Sma(a.cs1m.High, 15)
@@ -46,21 +46,21 @@ func (a *Momento) OnPeriodic(t time.Time, b *Book) {
 }
 
 // Setup method, should return list of symbols it need to subscribe for tickdata
-func (a *Momento) Setup(symbol string, b *Book) []string {
+func (a *Momento) Setup(symbol string, b *malgova.Book) []string {
 	symbolsToSubscribe := make([]string, 0)
 	a.symbol = symbol
-	a.cs1m = NewCandlesData(60)
+	a.cs1m = malgova.NewCandlesData(60)
 	symbolsToSubscribe = append(symbolsToSubscribe, symbol)
 	b.AllocateCash(10000)
 	return symbolsToSubscribe
 }
 
-func TestAStrategy(t *testing.T) {
+func main() {
 	db := kstreamdb.SetupDatabase("/home/pi/test-data/")
-	bt := BacktestEngine{}
+	bt := malgova.BacktestEngine{}
 	bt.RegisterAlgo(Momento{})
 	bt.Run(&db, nil)
-	for _, s := range bt.scores {
+	for _, s := range bt.Scores() {
 		fmt.Printf("%s\n", s)
 	}
 }
