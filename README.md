@@ -4,15 +4,6 @@
 Algo backtest go-module, to help with writing day trading strategies for NSE Level 1 / Level 2 datasets. This go-module uses the kstreamdb for tick-data, https://github.com/sivamgr/kstreamdb . For recording market-data using zerodha Kite API, refer to kbridge tool available at, https://github.com/sivamgr/kbridge
 
 
-
-# test
-```console
-C:\source\repo>git clone https://github.com/sivamgr/malgova.git
-C:\source\repo>cd malgova
-C:\source\repo\kbridge>go get -u
-C:\source\repo\kbridge>go test
-```
-
 # go get
 ```console
 C:\source\repo\kbridge>go get github.com/sivamgr/malgova
