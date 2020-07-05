@@ -1,8 +1,10 @@
 package malgova
 
 import (
+	"log"
 	"reflect"
 	"sync"
+	"time"
 
 	"github.com/sivamgr/kstreamdb"
 )
@@ -62,7 +64,7 @@ func (bt *btDayRunner) popOrders() []orderEntry {
 }
 
 //run day data against algos
-func (bt *btDayRunner) run(ticks []kstreamdb.TickData) {
+func (bt *btDayRunner) run(dt time.Time, ticks []kstreamdb.TickData) {
 
 	for _, t := range ticks {
 		// instantiate algo runners if not instantiated already
@@ -82,6 +84,12 @@ func (bt *btDayRunner) run(ticks []kstreamdb.TickData) {
 			}
 		}
 	}
+
+	inQueueCount := 0
+	for _, algo := range bt.algoRunner {
+		inQueueCount += len(algo.queueTick)
+	}
+	log.Printf("[%s] %d ticks in Queue", dt.Format("2006/01/02"), inQueueCount)
 
 	var wg sync.WaitGroup
 	// run the runners

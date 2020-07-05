@@ -3,6 +3,8 @@ package malgova
 import (
 	"log"
 	"reflect"
+	"sync"
+	"time"
 
 	"github.com/sivamgr/kstreamdb"
 )
@@ -28,15 +30,22 @@ func (bt *BacktestEngine) Run(feed *kstreamdb.DB, oms OrderManager) {
 	dates, _ := feed.GetDates()
 	dayRunner := btDayRunner{}
 	dayRunner.setup(bt.algos)
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+	var wg sync.WaitGroup
 
 	for _, dt := range dates {
-		log.Printf("%s - Loading data into memory\n", dt.Format("20060102"))
+		log.Printf("[%s] Loading data", dt.Format("2006/01/02"))
 		data, _ := feed.LoadDataForDate(dt)
-		log.Printf("%s - %d ticks loaded\n", dt.Format("20060102"), len(data))
-		dayRunner.run(data)
-		// merge the trade ledger
-		log.Printf("%s - completed run\n", dt.Format("20060102"))
+		log.Printf("[%s] %d ticks loaded", dt.Format("2006/01/02"), len(data))
+		wg.Wait()
+		wg.Add(1)
+		go func(d time.Time) {
+			dayRunner.run(d, data)
+			wg.Done()
+			log.Printf("[%s] Completed", d.Format("2006/01/02"))
+		}(dt)
 	}
+	wg.Wait()
 	dayRunner.exit()
 	//pull the orders from the run
 	bt.orders = dayRunner.popOrders()
