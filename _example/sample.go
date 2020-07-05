@@ -36,11 +36,12 @@ func (a *Momento) OnPeriodic(t time.Time, b *malgova.Book) {
 		ma3 := talib.Sma(a.cs1m.Low, 15)
 		if b.IsBookClean() && talib.Crossover(ma2, ma1) {
 			//fmt.Printf("[%v] Buy @ %.2f\n", t, ltp)
-			b.Buy(int(b.Cash / ltp))
+			quantityToBuy := int(b.Cash / ltp)
+			b.Buy(quantityToBuy)
 		}
 		if b.InPosition() && talib.Crossunder(ma2, ma3) {
 			//fmt.Printf("[%v] Sell @ %.2f\n", t, ltp)
-			b.Sell(b.Position)
+			b.Exit()
 		}
 	}
 }

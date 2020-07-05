@@ -16,6 +16,7 @@ type tradeData struct {
 	trades   []tradeEntry
 }
 
+// AlgoScore struct
 type AlgoScore struct {
 	algoName string
 	symbol   string

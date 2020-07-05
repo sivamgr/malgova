@@ -9,10 +9,11 @@ import (
 
 // btDayRunner struct
 type btDayRunner struct {
-	algos       []reflect.Type
-	tickManager map[string]*btTickManager
-	algoRunner  map[string]*btAlgoRunner
-	orders      []orderEntry
+	algos               []reflect.Type
+	tickManager         map[string]*btTickManager
+	algoRunner          map[string]*btAlgoRunner
+	flagSymbolAlgoSetup map[string]bool
+	orders              []orderEntry
 }
 
 func (bt *btDayRunner) instantiateAllAlgosForSymbol(symbol string) {
@@ -35,25 +36,39 @@ func (bt *btDayRunner) instantiateAllAlgosForSymbol(symbol string) {
 func algoRunWorker(wg *sync.WaitGroup, algo *btAlgoRunner, bt *btDayRunner) {
 	defer wg.Done()
 	algo.run()
-	// merge the trade ledger
-	if len(algo.orders) > 0 {
-		bt.orders = append(bt.orders, algo.orders...)
-	}
 }
 
-//run day data against algos
-func (bt *btDayRunner) run(algos []reflect.Type, ticks []kstreamdb.TickData) {
-	// Feed Data to algos
+func (bt *btDayRunner) setup(algos []reflect.Type) {
 	bt.algos = algos
 	bt.tickManager = make(map[string]*btTickManager)
 	bt.algoRunner = make(map[string]*btAlgoRunner)
-	flagSymbolAlgoSetup := make(map[string]bool)
+	bt.flagSymbolAlgoSetup = make(map[string]bool)
+	// reset orders
 	bt.orders = make([]orderEntry, 0)
+}
+
+func (bt *btDayRunner) exit() {
+	for _, algo := range bt.algoRunner {
+		algo.exit()
+		// merge the trade ledger
+		bt.orders = append(bt.orders, algo.popOrders()...)
+	}
+}
+
+func (bt *btDayRunner) popOrders() []orderEntry {
+	orders := bt.orders
+	bt.orders = make([]orderEntry, 0)
+	return orders
+}
+
+//run day data against algos
+func (bt *btDayRunner) run(ticks []kstreamdb.TickData) {
+
 	for _, t := range ticks {
 		// instantiate algo runners if not instantiated already
 		if t.IsTradable {
-			if _, ok := flagSymbolAlgoSetup[t.TradingSymbol]; !ok {
-				flagSymbolAlgoSetup[t.TradingSymbol] = true
+			if _, ok := bt.flagSymbolAlgoSetup[t.TradingSymbol]; !ok {
+				bt.flagSymbolAlgoSetup[t.TradingSymbol] = true
 				bt.instantiateAllAlgosForSymbol(t.TradingSymbol)
 			}
 		}

@@ -32,16 +32,25 @@ func (a *btAlgoRunner) queue(t kstreamdb.TickData) {
 	}
 }
 
+func (a *btAlgoRunner) resetQueue() {
+	a.queueTick = make([]kstreamdb.TickData, 0, len(a.watch)*24000)
+}
+
 func (a *btAlgoRunner) run() {
 	if a.enable {
 		for _, t := range a.queueTick {
 			a.checkClock(t.Timestamp)
 			a.handleTick(t)
 		}
+		a.resetQueue()
+		//fmt.Printf("P/L %9.2f | Trades %3d | %s\n", a.book.Cash-a.book.CashAllocated, a.book.OrderCount, a.ID())
+	}
+}
 
+func (a *btAlgoRunner) exit() {
+	if a.enable {
 		a.strategy.OnClose(&a.book)
 		a.handleBook()
-		//fmt.Printf("P/L %9.2f | Trades %3d | %s\n", a.book.Cash-a.book.CashAllocated, a.book.OrderCount, a.ID())
 	}
 }
 
@@ -135,6 +144,12 @@ func (a *btAlgoRunner) handleTick(t kstreamdb.TickData) {
 	a.strategy.OnTick(t, &a.book)
 }
 
+func (a *btAlgoRunner) popOrders() []orderEntry {
+	orders := a.orders
+	a.orders = make([]orderEntry, 0)
+	return orders
+}
+
 func newAlgoInstance(algoType reflect.Type, symbol string) *btAlgoRunner {
 	a := new(btAlgoRunner)
 	a.algoName = algoType.Name()
@@ -148,7 +163,7 @@ func newAlgoInstance(algoType reflect.Type, symbol string) *btAlgoRunner {
 
 	if a.enable {
 		// prealloc queue
-		a.queueTick = make([]kstreamdb.TickData, 0, len(a.watch)*24000)
+		a.resetQueue()
 	}
 	a.orders = make([]orderEntry, 0)
 	//fmt.Printf("%+v %+v %+v \n", a.ptr, reflect.TypeOf(a.ptr), a.ptr.Interface().(AlgoStrategy))

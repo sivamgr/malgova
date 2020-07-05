@@ -26,21 +26,21 @@ func (bt *BacktestEngine) RegisterAlgo(a interface{}) {
 func (bt *BacktestEngine) Run(feed *kstreamdb.DB, oms OrderManager) {
 	// Load All Data into memory
 	dates, _ := feed.GetDates()
-	bt.orders = make([]orderEntry, 0)
+	dayRunner := btDayRunner{}
+	dayRunner.setup(bt.algos)
+
 	for _, dt := range dates {
 		log.Printf("%s - Loading data into memory\n", dt.Format("20060102"))
 		data, _ := feed.LoadDataForDate(dt)
 		log.Printf("%s - %d ticks loaded\n", dt.Format("20060102"), len(data))
-		dayRunner := btDayRunner{}
-		dayRunner.run(bt.algos, data)
+		dayRunner.run(data)
 		// merge the trade ledger
-		if len(dayRunner.orders) > 0 {
-			bt.orders = append(bt.orders, dayRunner.orders...)
-		}
 		log.Printf("%s - completed run\n", dt.Format("20060102"))
 	}
-
-	// generate scores for algo runs
+	dayRunner.exit()
+	//pull the orders from the run
+	bt.orders = dayRunner.popOrders()
+	// analyze the orders and generate scores for algo
 	bt.scores = calculateAlgoScores(bt.orders)
 }
 
