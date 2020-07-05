@@ -43,14 +43,49 @@ import (
 
 // Momento AlgoStrategy
 type Momento struct {
-	symbol string
-	cs1m   *malgova.CandlesData
+	symbol      string
+	candles1min *malgova.CandlesData
+}
+
+// Setup method, should return list of symbols it need to subscribe for tickdata
+func (a *Momento) Setup(symbol string, b *malgova.Book) []string {
+	symbolsToSubscribe := make([]string, 0)
+	a.symbol = symbol
+
+	//set up data aggregation.
+	a.candles1min = malgova.NewCandlesData(60)
+
+	// add symbols needed to subscribe
+	symbolsToSubscribe = append(symbolsToSubscribe, symbol)
+	b.AllocateCash(10000)
+	return symbolsToSubscribe
 }
 
 // OnTick Method
 func (a *Momento) OnTick(t kstreamdb.TickData, b *malgova.Book) {
 	if t.TradingSymbol == a.symbol {
-		a.cs1m.Update(t)
+		// update data aggregation on tick
+		a.candles1min.Update(t)
+	}
+}
+
+// OnPeriodic method
+func (a *Momento) OnPeriodic(t time.Time, b *malgova.Book) {
+	// if new candle is formed and has a minimum of 15 data points,
+	if a.candles1min.HasChanged(t) && len(a.candles1min.Close) > 15 {
+		ltp := a.candles1min.LTP
+		ma1 := talib.Sma(a.candles1min.High, 15)
+		ma2 := talib.Ema(a.candles1min.Close, 15)
+		ma3 := talib.Sma(a.candles1min.Low, 15)
+		// If book is clean and conditions are right, place buy order
+		if b.IsBookClean() && talib.Crossover(ma2, ma1) {
+			quantityToBuy := int(b.Cash / ltp)
+			b.Buy(quantityToBuy)
+		}
+		// If a position is taken and conditions are not right, exit position
+		if b.InPosition() && talib.Crossunder(ma2, ma3) {
+			b.Exit()
+		}
 	}
 }
 
@@ -59,41 +94,13 @@ func (a *Momento) OnClose(b *malgova.Book) {
 	b.Exit()
 }
 
-// OnPeriodic method
-func (a *Momento) OnPeriodic(t time.Time, b *malgova.Book) {
-	if a.cs1m.HasChanged(t) && len(a.cs1m.Close) > 15 {
-		ltp := a.cs1m.LTP
-		ma1 := talib.Sma(a.cs1m.High, 15)
-		ma2 := talib.Ema(a.cs1m.Close, 15)
-		ma3 := talib.Sma(a.cs1m.Low, 15)
-		if b.IsBookClean() && talib.Crossover(ma2, ma1) {
-			//fmt.Printf("[%v] Buy @ %.2f\n", t, ltp)
-			b.Buy(int(b.Cash / ltp))
-		}
-		if b.InPosition() && talib.Crossunder(ma2, ma3) {
-			//fmt.Printf("[%v] Sell @ %.2f\n", t, ltp)
-			b.Sell(b.Position)
-		}
-	}
-}
-
-// Setup method, should return list of symbols it need to subscribe for tickdata
-func (a *Momento) Setup(symbol string, b *malgova.Book) []string {
-	symbolsToSubscribe := make([]string, 0)
-	a.symbol = symbol
-	a.cs1m = malgova.NewCandlesData(60)
-	symbolsToSubscribe = append(symbolsToSubscribe, symbol)
-	b.AllocateCash(10000)
-	return symbolsToSubscribe
-}
-
 func main() {
 	db := kstreamdb.SetupDatabase("/home/pi/test-data/")
 	bt := malgova.BacktestEngine{}
 	bt.RegisterAlgo(Momento{})
 	bt.Run(&db, nil)
 	for _, s := range bt.Scores() {
-		fmt.Printf("%s\n", s)
+		fmt.Println(s)
 	}
 }
 
