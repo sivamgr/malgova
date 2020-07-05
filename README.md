@@ -6,7 +6,7 @@ Algo backtest go-module, to help with writing day trading strategies for NSE Lev
 
 # go get
 ```console
-C:\source\repo\kbridge>go get github.com/sivamgr/malgova
+go get github.com/sivamgr/malgova
 ```
 
 # AlgoStrategy Interface
