@@ -1,11 +1,10 @@
 package malgova
 
 import (
-	"log"
 	"reflect"
-	"sync"
 	"time"
 
+	"github.com/cskr/pubsub"
 	"github.com/sivamgr/kstreamdb"
 )
 
@@ -16,13 +15,14 @@ type btDayRunner struct {
 	algoRunner          map[string]*btAlgoRunner
 	flagSymbolAlgoSetup map[string]bool
 	orders              []orderEntry
+	inProcPubSub        *pubsub.PubSub
 }
 
 func (bt *btDayRunner) instantiateAllAlgosForSymbol(symbol string) {
 	//spawn algos for symbol
 
 	for _, a := range bt.algos {
-		pAlgo := newAlgoInstance(a, symbol)
+		pAlgo := newAlgoInstance(a, symbol, bt.inProcPubSub)
 		algoID := pAlgo.ID()
 		bt.algoRunner[algoID] = pAlgo
 		for _, w := range pAlgo.watch {
@@ -34,12 +34,6 @@ func (bt *btDayRunner) instantiateAllAlgosForSymbol(symbol string) {
 	}
 }
 
-// worker for concurrent algo execution
-func algoRunWorker(wg *sync.WaitGroup, algo *btAlgoRunner, bt *btDayRunner) {
-	defer wg.Done()
-	algo.run()
-}
-
 func (bt *btDayRunner) setup(algos []reflect.Type) {
 	bt.algos = algos
 	bt.tickManager = make(map[string]*btTickManager)
@@ -47,6 +41,7 @@ func (bt *btDayRunner) setup(algos []reflect.Type) {
 	bt.flagSymbolAlgoSetup = make(map[string]bool)
 	// reset orders
 	bt.orders = make([]orderEntry, 0)
+	bt.inProcPubSub = pubsub.New(1)
 }
 
 func (bt *btDayRunner) exit() {
@@ -75,28 +70,6 @@ func (bt *btDayRunner) run(dt time.Time, ticks []kstreamdb.TickData) {
 			}
 		}
 
-		// pass data to algos subscribed to this symbol
-		if tickMgr, ok := bt.tickManager[t.TradingSymbol]; ok {
-			for _, algoid := range tickMgr.observerAlgoIDs {
-				pAlgo := bt.algoRunner[algoid]
-				// queue tick for handling
-				pAlgo.queue(t)
-			}
-		}
+		bt.inProcPubSub.Pub(t, t.TradingSymbol)
 	}
-
-	inQueueCount := 0
-	for _, algo := range bt.algoRunner {
-		inQueueCount += len(algo.queueTick)
-	}
-	log.Printf("[%s] %d ticks in Queue", dt.Format("2006/01/02"), inQueueCount)
-
-	var wg sync.WaitGroup
-	// run the runners
-	for _, algo := range bt.algoRunner {
-		wg.Add(1)
-		go algoRunWorker(&wg, algo, bt)
-	}
-
-	wg.Wait()
 }
