@@ -60,6 +60,14 @@ func (a *Momento) Setup(symbol string, b *malgova.Book) []string {
 	b.AllocateCash(10000)
 	return symbolsToSubscribe
 }
+// OnDayStart method
+func (a *Momento) OnDayStart(b *malgova.Book) {
+}
+
+// OnDayEnd method
+func (a *Momento) OnDayEnd(b *malgova.Book) {
+}
+
 
 // OnTick Method
 func (a *Momento) OnTick(t kstreamdb.TickData, b *malgova.Book) {
