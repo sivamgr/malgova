@@ -18,6 +18,7 @@ type OrderFlowMonitor struct {
 	LastTick               kstreamdb.TickData
 	TotalBidsQuantityTaken uint32
 	TotalAsksQuantityTaken uint32
+	TicksUpdated           uint32
 	Prices                 map[uint32]*PriceCell
 	Bids                   [5]kstreamdb.DepthItem
 	Asks                   [5]kstreamdb.DepthItem
@@ -42,6 +43,7 @@ func (r *OrderFlowMonitor) GetPriceCell(p float32) *PriceCell {
 // Update processes the tick
 func (r *OrderFlowMonitor) Update(t kstreamdb.TickData) {
 	if t.VolumeTraded > r.LastTick.VolumeTraded {
+		r.TicksUpdated++
 		ltq := t.LastTradedQuantity
 		pCell := r.GetPriceCell(t.LastPrice)
 		if (len(r.Bids) > 0) && (t.LastPrice <= r.Bids[0].Price) {
@@ -71,6 +73,7 @@ func (v *PriceCell) resetCounters() {
 func (r *OrderFlowMonitor) Reset() {
 	r.TotalAsksQuantityTaken = 0
 	r.TotalBidsQuantityTaken = 0
+	r.TicksUpdated = 0
 	for _, v := range r.Prices {
 		v.resetCounters()
 	}
