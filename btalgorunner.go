@@ -38,10 +38,12 @@ func (a *btAlgoRunner) resetQueue() {
 
 func (a *btAlgoRunner) run() {
 	if a.enable {
+		a.strategy.OnDayStart(&a.book)
 		for _, t := range a.queueTick {
 			a.checkClock(t.Timestamp)
 			a.handleTick(t)
 		}
+		a.strategy.OnDayEnd(&a.book)
 		a.resetQueue()
 		//fmt.Printf("P/L %9.2f | Trades %3d | %s\n", a.book.Cash-a.book.CashAllocated, a.book.OrderCount, a.ID())
 	}
