@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/cskr/pubsub"
 	"github.com/sivamgr/kstreamdb"
 )
 
@@ -18,6 +17,7 @@ type btAlgoRunner struct {
 	watch               []string
 	enable              bool
 	lastTick            kstreamdb.TickData
+	queueTick           []kstreamdb.TickData
 	utcLastPeriodicCall int64
 	orders              []orderEntry
 }
@@ -26,12 +26,24 @@ func (a *btAlgoRunner) ID() string {
 	return a.algoName + "::" + a.symbol
 }
 
-func (a *btAlgoRunner) processTick(pubsub *pubsub.PubSub) {
-	ch := pubsub.Sub(a.watch...)
-	for msg := range ch {
-		t := msg.(kstreamdb.TickData)
-		a.checkClock(t.Timestamp)
-		a.handleTick(t)
+func (a *btAlgoRunner) queue(t kstreamdb.TickData) {
+	if a.enable {
+		a.queueTick = append(a.queueTick, t)
+	}
+}
+
+func (a *btAlgoRunner) resetQueue() {
+	a.queueTick = make([]kstreamdb.TickData, 0, len(a.watch)*24000)
+}
+
+func (a *btAlgoRunner) run() {
+	if a.enable {
+		for _, t := range a.queueTick {
+			a.checkClock(t.Timestamp)
+			a.handleTick(t)
+		}
+		a.resetQueue()
+		//fmt.Printf("P/L %9.2f | Trades %3d | %s\n", a.book.Cash-a.book.CashAllocated, a.book.OrderCount, a.ID())
 	}
 }
 
@@ -138,7 +150,7 @@ func (a *btAlgoRunner) popOrders() []orderEntry {
 	return orders
 }
 
-func newAlgoInstance(algoType reflect.Type, symbol string, pubsub *pubsub.PubSub) *btAlgoRunner {
+func newAlgoInstance(algoType reflect.Type, symbol string) *btAlgoRunner {
 	a := new(btAlgoRunner)
 	a.algoName = algoType.Name()
 	a.symbol = symbol
@@ -149,11 +161,11 @@ func newAlgoInstance(algoType reflect.Type, symbol string, pubsub *pubsub.PubSub
 	a.enable = len(a.watch) > 0
 	a.utcLastPeriodicCall = 0
 
-	a.orders = make([]orderEntry, 0)
 	if a.enable {
-		// process ticks
-		go a.processTick(pubsub)
+		// prealloc queue
+		a.resetQueue()
 	}
+	a.orders = make([]orderEntry, 0)
 	//fmt.Printf("%+v %+v %+v \n", a.ptr, reflect.TypeOf(a.ptr), a.ptr.Interface().(AlgoStrategy))
 	return a
 }
