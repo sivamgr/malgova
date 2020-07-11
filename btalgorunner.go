@@ -69,6 +69,9 @@ func (a *btAlgoRunner) handleBook() {
 		if a.book.IsMarketOrder {
 			if a.book.PendingOrderQuantity > 0 {
 				buyPrice := a.lastTick.Ask[0].Price
+				if buyPrice <= 0 {
+					buyPrice = a.lastTick.LastPrice
+				}
 				cost := buyPrice * float32(a.book.PendingOrderQuantity)
 				a.book.Cash -= float64(cost)
 				a.book.Position += a.book.PendingOrderQuantity
@@ -85,6 +88,10 @@ func (a *btAlgoRunner) handleBook() {
 				a.book.OrderCount++
 			} else if a.book.PendingOrderQuantity < 0 {
 				sellPrice := a.lastTick.Bid[0].Price
+				if sellPrice <= 0 {
+					sellPrice = a.lastTick.LastPrice
+				}
+
 				cost := sellPrice * float32(a.book.PendingOrderQuantity)
 				a.book.Cash -= float64(cost)
 				a.book.Position += a.book.PendingOrderQuantity
