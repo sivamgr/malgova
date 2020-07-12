@@ -18,24 +18,24 @@ type tradeData struct {
 
 // AlgoScore struct
 type AlgoScore struct {
-	algoName string
-	symbol   string
+	AlgoName string
+	Symbol   string
 	// stats and scores
-	ordersCount          int
-	tradesCount          int
-	tradesWon            int
-	tradesLost           int
-	winStreak            int
-	lossStreak           int
-	netPnl               float64
-	netPnlPercentAverage float64
-	netPnlPercentStdDev  float64
+	OrdersCount          int
+	TradesCount          int
+	TradesWon            int
+	TradesLost           int
+	WinStreak            int
+	LossStreak           int
+	NetPnl               float64
+	NetPnlPercentAverage float64
+	NetPnlPercentStdDev  float64
 
-	sqn float64
+	SQN float64
 }
 
 func (t AlgoScore) String() string {
-	return fmt.Sprintf("%12s|%20s|%5d|%4d|%4d:%4d|%3d:%3d| %9.2f |%9.2f|%9.2f| %7.3f", t.algoName, t.symbol, t.ordersCount, t.tradesCount, t.tradesWon, t.tradesLost, t.winStreak, t.lossStreak, t.netPnl, t.netPnlPercentAverage, t.netPnlPercentStdDev, t.sqn)
+	return fmt.Sprintf("%12s|%20s|%5d|%4d|%4d:%4d|%3d:%3d| %9.2f |%9.2f|%9.2f| %7.3f", t.AlgoName, t.Symbol, t.OrdersCount, t.TradesCount, t.TradesWon, t.TradesLost, t.WinStreak, t.LossStreak, t.NetPnl, t.NetPnlPercentAverage, t.NetPnlPercentStdDev, t.SQN)
 }
 
 type tradeEntry struct {
@@ -58,8 +58,8 @@ func (a *tradeData) add(t orderEntry) {
 func (a *tradeData) resetScore() {
 	a.trades = make([]tradeEntry, 0)
 	a.score = AlgoScore{
-		algoName: a.algoName,
-		symbol:   a.symbol,
+		AlgoName: a.algoName,
+		Symbol:   a.symbol,
 	}
 }
 
@@ -106,36 +106,36 @@ func (a *tradeData) processScore() {
 	a.resetScore()
 	a.consolidateTrades()
 
-	a.score.tradesCount = len(a.trades)
+	a.score.TradesCount = len(a.trades)
 	pnl := make([]float64, 0)
 	winStreak := 0
 	lossStreak := 0
 
-	if a.score.tradesCount > 0 {
+	if a.score.TradesCount > 0 {
 		for _, t := range a.trades {
-			a.score.ordersCount += t.orders
+			a.score.OrdersCount += t.orders
 			if t.pnl > 0 {
 				winStreak++
 				lossStreak = 0
-				a.score.tradesWon++
+				a.score.TradesWon++
 			} else {
 				winStreak = 0
 				lossStreak++
-				a.score.tradesLost++
+				a.score.TradesLost++
 			}
-			a.score.netPnl += t.pnl
+			a.score.NetPnl += t.pnl
 			pnl = append(pnl, t.pnlPercentage)
-			if a.score.winStreak < winStreak {
-				a.score.winStreak = winStreak
+			if a.score.WinStreak < winStreak {
+				a.score.WinStreak = winStreak
 			}
-			if a.score.lossStreak < lossStreak {
-				a.score.lossStreak = lossStreak
+			if a.score.LossStreak < lossStreak {
+				a.score.LossStreak = lossStreak
 			}
 		}
-		a.score.netPnlPercentAverage = stat.Mean(pnl, nil)
-		a.score.netPnlPercentStdDev = stat.StdDev(pnl, nil)
-		if a.score.netPnlPercentStdDev != 0 {
-			a.score.sqn = math.Sqrt(float64(a.score.tradesCount)) * a.score.netPnlPercentAverage / a.score.netPnlPercentStdDev
+		a.score.NetPnlPercentAverage = stat.Mean(pnl, nil)
+		a.score.NetPnlPercentStdDev = stat.StdDev(pnl, nil)
+		if a.score.NetPnlPercentStdDev != 0 {
+			a.score.SQN = math.Sqrt(float64(a.score.TradesCount)) * a.score.NetPnlPercentAverage / a.score.NetPnlPercentStdDev
 		}
 
 	}
